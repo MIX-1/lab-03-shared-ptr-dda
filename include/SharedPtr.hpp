@@ -5,6 +5,7 @@
 
 #include <string>
 #include <atomic>
+#include <move>
 
 using std :: atomic;
 using std :: move;
