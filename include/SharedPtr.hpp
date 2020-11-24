@@ -6,8 +6,8 @@
 #include <string>
 #include <atomic>
 
-using std :: cout;
 using std :: atomic;
+using std :: move;
 
 template <typename T>
 struct Counter {
@@ -17,7 +17,7 @@ struct Counter {
   void AddCounter() {++counter;}
 
   void Clean() {
-    if(!--counter) {
+    if (!--counter) {
       ptr = nullptr;
       delete this;
     }
@@ -41,9 +41,13 @@ struct Counter {
 
     explicit SharedPtr(T* p) : ptr(p), counter(new Counter<T>(p)) {}
 
-  SharedPtr(const SharedPtr& r) : ptr(r.ptr), counter(r.counter) {counter->AddCounter();}
+  SharedPtr(const SharedPtr& r) : ptr(r.ptr), counter(r.counter) {
+    counter->AddCounter();
+  }
 
-  SharedPtr(SharedPtr&& r)  noexcept : ptr(std::move(r.ptr)), counter(std::move(r.counter)) {}
+  SharedPtr(SharedPtr&& r)  noexcept :
+                                      ptr(move(r.ptr)),
+                                      counter(move(r.counter)) {}
 
   ~SharedPtr() {
     counter->Clean();
@@ -56,15 +60,12 @@ struct Counter {
   }
 
   auto operator=(SharedPtr&& r) -> SharedPtr& {
-    ptr = std::move(r.ptr);
-    counter = std::move(r.counter);
+    ptr = move(r.ptr);
+    counter = move(r.counter);
     return *this;
   }
 
-  // проверяет, указывает ли указатель на объект
-  explicit operator bool() const {
-    return (ptr != nullptr);
-  }
+  explicit operator bool() const {return (ptr != nullptr);}
 
   auto operator*() const -> T& {return *ptr;}
 
@@ -73,17 +74,16 @@ struct Counter {
   auto get() -> T* {return ptr;}
 
   void swap(SharedPtr& r) {
-    T *temp_p = std::move(r.ptr);
-    Counter<T> *temp_c = std::move(r.counter);
-    r.ptr = std::move(ptr);
-    r.counter = std::move(counter);
-    ptr = std::move(temp_p);
-    counter = std::move(temp_c);
+    T *temp_p = move(r.ptr);
+    Counter<T> *temp_c = move(r.counter);
+    r.ptr = move(ptr);
+    r.counter = move(counter);
+    ptr = move(temp_p);
+    counter = move(temp_c);
   }
-  // возвращает количество объектов SharedPtr, которые ссылаются на тот же управляемый объект
 
   [[nodiscard]] auto use_count() const -> size_t {
-    if(ptr != nullptr){
+    if (ptr != nullptr) {
       return counter->get();
     } else {
       return 0;
